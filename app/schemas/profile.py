@@ -1,8 +1,11 @@
 from datetime import datetime
-from uuid import UUID
 from typing import List, Optional
+from uuid import UUID
 
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, EmailStr, Field
+
+from app.schemas.upload import UploadResponse
+
 
 class ProfileCreate(BaseModel):
     full_name: str = Field(min_length=1, max_length=200)
@@ -32,3 +35,11 @@ class ProfileResponse(BaseModel):
     education: List[dict] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
+
+
+class PopulateFromUploadRequest(BaseModel):
+    upload_id: str
+
+
+class ProfileUploadsResponse(BaseModel):
+    uploads: List[UploadResponse]
