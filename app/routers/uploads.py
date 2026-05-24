@@ -1,5 +1,6 @@
 import logging
 import uuid
+from typing import Optional
 from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends
 from app.database import get_db
 from app.schemas.upload import UploadResponse, UploadStatus
@@ -32,10 +33,13 @@ def process_resume_background(upload_id: str, file_bytes: bytes, file_type: str)
         logger.info(f"Resume parsed: {upload_id}")
 
     except Exception as e:
-        supabase.table("uploads").update({
-            "status": UploadStatus.FAILED.value,
-            "error_msg": str(e)[:500]
-        }).eq("id", upload_id).execute()
+        try:
+            supabase.table("uploads").update({
+                "status": UploadStatus.FAILED.value,
+                "error_msg": str(e)[:500]
+            }).eq("id", upload_id).execute()
+        except Exception as update_err:
+            logger.error(f"Failed to mark upload {upload_id} as FAILED: {str(update_err)}")
         logger.error(f"Parse failed: {upload_id} — {str(e)}")
 
 
@@ -43,7 +47,7 @@ def process_resume_background(upload_id: str, file_bytes: bytes, file_type: str)
 async def upload_resume(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    profile_id: str = None,
+    profile_id: Optional[str] = None,
     db=Depends(get_db),
 ):
     if file.content_type not in ALLOWED_TYPES:

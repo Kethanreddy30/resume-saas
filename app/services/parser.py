@@ -68,6 +68,9 @@ def extract_text_from_file(file_bytes: bytes, file_type: str) -> str:
 
 def parse_resume_with_ai(text: str) -> dict:
     """Send extracted text to Groq for structured extraction."""
+    if len(text) > 6000:
+        logger.warning("Resume text truncated from %d to 6000 chars", len(text))
+
     client = Groq(api_key=settings.groq_api_key)
 
     response = client.chat.completions.create(
@@ -90,7 +93,11 @@ def parse_resume_with_ai(text: str) -> dict:
         if raw.startswith("json"):
             raw = raw[4:]
 
-    return json.loads(raw)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        logger.error("Failed to parse AI response as JSON: %r", raw[:200])
+        raise ValueError("AI returned invalid JSON; could not parse resume data") from None
 
 
 def parse_resume(file_bytes: bytes, file_type: str) -> dict:
