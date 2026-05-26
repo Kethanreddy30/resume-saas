@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     environment: str = "development"
     llm_provider: str = "groq"
     tesseract_cmd: Optional[str] = None
-    auth_required: bool = False
+    auth_required: bool = True
 
     class Config:
         env_file = ".env"

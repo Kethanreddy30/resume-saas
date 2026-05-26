@@ -1,19 +1,14 @@
 import json
 import logging
-from typing import Any
-
 from groq import Groq
-
 from app.config import settings
 
 logger = logging.getLogger(__name__)
-
 GROQ_MODEL = "llama-3.3-70b-versatile"
 
 JOB_REQUIREMENTS_PROMPT = """
 Extract structured job requirements from this job description.
 Return ONLY valid JSON with this exact structure, nothing else:
-
 {
   "required_skills": ["skill1", "skill2"],
   "preferred_skills": ["skill1"],
@@ -21,33 +16,28 @@ Return ONLY valid JSON with this exact structure, nothing else:
   "years_experience": "string or null",
   "education_requirement": "string or null"
 }
-
 Job description:
 """
 
 TAILOR_PROMPT = """
 Compare this candidate profile against the job requirements.
-Return ONLY valid JSON with localized suggestions — do NOT rewrite the full resume.
-
-{
+Return ONLY valid JSON with localized suggestions - do NOT rewrite the full resume.
+{{
   "missing_skills": ["skill1"],
   "suggested_summary_additions": "1-2 sentences to add to summary",
   "keyword_gaps": ["keyword1"],
   "experience_tweaks": [
-    {
+    {{
       "company": "string",
       "suggestion": "specific tweak for this role"
-    }
+    }}
   ]
-}
-
+}}
 Profile:
 {profile}
-
 Job requirements:
 {requirements}
 """
-
 
 class LLMProvider:
     def __init__(self, provider: str | None = None):
@@ -83,14 +73,12 @@ class LLMProvider:
     def _groq_call(self, text: str, prompt: str) -> dict:
         client = Groq(api_key=settings.groq_api_key)
         content = prompt + text[:6000] if text else prompt
-
         response = client.chat.completions.create(
             model=GROQ_MODEL,
             messages=[{"role": "user", "content": content}],
             temperature=0.1,
             max_tokens=2000,
         )
-
         raw = response.choices[0].message.content.strip()
         return self._parse_json_response(raw)
 
@@ -102,10 +90,11 @@ class LLMProvider:
 
     def _parse_json_response(self, raw: str) -> dict:
         if raw.startswith("```"):
-            raw = raw.split("```")[1]
+            parts = raw.split("```")
+            raw = parts[1] if len(parts) > 1 else raw
             if raw.startswith("json"):
                 raw = raw[4:]
-
+        raw = raw.strip()
         try:
             return json.loads(raw)
         except json.JSONDecodeError:

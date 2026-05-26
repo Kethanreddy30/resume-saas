@@ -49,6 +49,7 @@ def _configure_tesseract() -> None:
 
 def extract_text_from_file(file_bytes: bytes, file_type: str) -> str:
     """Extract text from PDF or image."""
+    import pymupdf
     import pymupdf4llm
 
     suffix = ".pdf" if "pdf" in file_type else ".jpg"
